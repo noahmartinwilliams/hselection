@@ -28,6 +28,11 @@ obey w (DrawPlant (col, row) : rest) c r = do
     wAddStr w "p"
     obey w rest c r
 
+obey w (DrawBug (col, row) : rest) c r = do
+    move row col
+    wAddStr w "b"
+    obey w rest c r
+
 obey w (DrawStr str (col, row) : rest) c r = do
     move row col
     wAddStr w str

@@ -1,4 +1,4 @@
-module Plants(Plant(..), drawPlant) where
+module Plant(Plant(..), drawPlant) where
 
 import Pos
 import Commands
