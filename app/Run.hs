@@ -54,8 +54,9 @@ runPlants _ = do
 runBugs :: [Int] -> Int -> Int -> RunnerM World [LogEntry] [Command]
 runBugs _ cols rows = do
     (World spiders plants bugs logs) <- get
-    let (commands, logs') = runWriter (mapM (drawBug cols rows) bugs)
-    put (World spiders plants bugs (logs ++ logs'))
+    let (bugs', logs') = runWriter (mapM (obeyGenes cols rows) bugs)
+    let (commands, logs'') = runWriter (mapM (drawBug cols rows) bugs)
+    put (World spiders plants bugs' (logs ++ logs' ++ logs''))
     return (foldr (++) [] commands)
 
 run :: [Int] -> [Double] -> Int -> Int -> Double -> RunnerM World [LogEntry] [Command]
