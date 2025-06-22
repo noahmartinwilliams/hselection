@@ -9,7 +9,7 @@ import Data.List
 
 data Bug = Bug { bugPosn :: Pos, bugEnergy :: Int, bugGenes :: [Gene], bugCurrentGene :: Int, bugScratchPosns :: [Pos], bugScratchDoubles :: [Double] } deriving(Show, Eq, Ord)
 
-data Gene = Up | Down | Left | Right | GetNearestSpider Int | GetMag Int Int deriving(Show, Eq, Ord)
+data Gene = Up | Down | Left | Right | GetNearestSpider Int | GetMag Int Int | IfLt Int Int | EndIf deriving(Show, Eq, Ord)
 
 obeyGenes :: Int -> Int -> [Spider] -> Bug -> Writer [LogEntry] Bug
 obeyGenes cols rows spiders bug@(Bug { bugCurrentGene = x, bugGenes = y}) | (x == ((length y) - 1)) = obeyGenes cols rows spiders (bug {bugCurrentGene = 0}) 
@@ -37,6 +37,18 @@ obeyGenes cols rows spiderLs bug@(Bug { bugCurrentGene = i, bugEnergy = e, bugGe
         GetMag posnIndex doubleIndex -> 
             return (bug {bugCurrentGene = currentGene', bugScratchDoubles = (replaceInList scratchDoubles doubleIndex (getDist ( scratchPosns !! posnIndex)  (0, 0))) } )
 
+        IfLt doubleIndx1 doubleIndx2 ->
+            if (scratchDoubles !! doubleIndx1) < (scratchDoubles !! doubleIndx2) 
+            then
+                return (bug { bugCurrentGene = currentGene'})
+            else
+                return (bug { bugCurrentGene = (i + (skipToEndIf (drop (i + 1) g)))})
+
+skipToEndIf :: [Gene] -> Int 
+skipToEndIf [] = 0
+skipToEndIf (EndIf : _) = 1
+skipToEndIf (_ : rest) = 1 + (skipToEndIf rest)
+
 replaceInList :: [a] -> Int -> a -> [a]
 replaceInList [] _ _ = []
 replaceInList (_ : rest) 0 r = r : rest
@@ -48,7 +60,7 @@ bugBounce bounced newPos bug@(Bug {bugPosn = p, bugEnergy = e, bugCurrentGene = 
     if bounced 
     then do 
         tell [BugBounced p] ; 
-        return (bug {bugEnergy = (e-1)} ) 
+        return (bug {bugPosn = newPos, bugEnergy = (e-1)} ) 
     else 
         return (bug{bugEnergy = (e - 1), bugPosn = newPos, bugCurrentGene = currentGene'})
 
@@ -56,7 +68,7 @@ randBug :: [Int] -> Int -> Int -> (Bug, [Int])
 randBug (randX : randY : rest ) cols rows = do
     let randX' = mod (abs randX) cols
         randY' = mod (abs randY) rows
-    (Bug { bugPosn = (randX', randY'), bugEnergy = 15, bugGenes = [Up, Down, Bug.Left, Bug.Right, GetNearestSpider 0, GetMag 0 0 ], bugScratchPosns = [(0, 0)], bugCurrentGene = 0, bugScratchDoubles = [0.0]}, rest)
+    (Bug { bugPosn = (randX', randY'), bugEnergy = 15, bugGenes = [Up, Down, Bug.Left, Bug.Right, GetNearestSpider 0, GetMag 0 0, IfLt 0 1, Up, EndIf], bugScratchPosns = [(0, 0)], bugCurrentGene = 0, bugScratchDoubles = [0.0, 1.0]}, rest)
 
 randBugs :: [Int] -> Int -> Int -> Int -> ([Bug], [Int])
 randBugs rest _ _ 0 = ([], rest)

@@ -2,6 +2,7 @@ module Log(LogEntry(..), drawLogs) where
 
 import Pos
 import Commands
+import Control.Parallel.Strategies
 
 data LogEntry = SpiderBounced Pos | BugBounced Pos | SpiderStarved Pos deriving(Show, Eq)
 
@@ -22,4 +23,4 @@ drawLogs :: [LogEntry] -> Int -> Int -> [Command]
 drawLogs logLs cols rows = do
     let col = getCol cols
         coords = zip (repeat col) [0..]
-    map (\(l, (x, y)) -> drawLog l x y cols rows) (zip logLs coords)
+    parMap rseq (\(l, (x, y)) -> drawLog l x y cols rows) (zip logLs coords)
