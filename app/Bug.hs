@@ -4,14 +4,17 @@ import Pos
 import Commands
 import Log
 import Control.Monad.Writer
+import Spider
+import Data.List
 
-data Bug = Bug { bugPosn :: Pos, bugEnergy :: Int, bugGenes :: [Gene], bugCurrentGene :: Int } deriving(Show, Eq, Ord)
+data Bug = Bug { bugPosn :: Pos, bugEnergy :: Int, bugGenes :: [Gene], bugCurrentGene :: Int, bugScratchPosns :: [Pos], bugScratchDoubles :: [Double] } deriving(Show, Eq, Ord)
 
-data Gene = Up | Down | Left | Right deriving(Show, Eq, Ord)
+data Gene = Up | Down | Left | Right | GetNearestSpider Int | GetMag Int Int deriving(Show, Eq, Ord)
 
-obeyGenes :: Int -> Int -> Bug -> Writer [LogEntry] Bug
-obeyGenes cols rows bug@(Bug { bugCurrentGene = x, bugGenes = y}) | (x == (length y)) = obeyGenes cols rows (bug {bugCurrentGene = 0})
-obeyGenes cols rows bug@(Bug { bugCurrentGene = i, bugEnergy = e, bugGenes = g, bugPosn = p@(x, y)}) = do
+obeyGenes :: Int -> Int -> [Spider] -> Bug -> Writer [LogEntry] Bug
+obeyGenes cols rows spiders bug@(Bug { bugCurrentGene = x, bugGenes = y}) | (x == ((length y) - 1)) = obeyGenes cols rows spiders (bug {bugCurrentGene = 0}) 
+obeyGenes cols rows spiderLs bug@(Bug { bugCurrentGene = i, bugEnergy = e, bugGenes = g, bugPosn = p@(x, y), bugScratchPosns = scratchPosns, bugScratchDoubles = scratchDoubles }) = do
+    let currentGene' = i+1
     case (g !! i) of
         Up -> 
             let (bounced, newPos) = adjustPos (x, y+1) cols rows in bugBounce bounced newPos bug
@@ -21,6 +24,23 @@ obeyGenes cols rows bug@(Bug { bugCurrentGene = i, bugEnergy = e, bugGenes = g, 
             let (bounced, newPos) = adjustPos (x-1, y) cols rows in bugBounce bounced newPos bug
         Bug.Right ->
             let (bounced, newPos) = adjustPos (x+1, y) cols rows in bugBounce bounced newPos bug 
+        GetNearestSpider scratchIndex -> do
+            let spiderDists = map (\spider -> getDist (getSpiderPos spider) p) spiderLs
+                spiderZipped = zip spiderDists spiderLs
+                sorted = sort spiderZipped
+            if (length sorted) == 0
+            then
+                return bug
+            else
+                return (bug { bugCurrentGene = currentGene', bugScratchPosns = (replaceInList scratchPosns scratchIndex (getSpiderPos (snd (sorted !! 0)))) })
+
+        GetMag posnIndex doubleIndex -> 
+            return (bug {bugCurrentGene = currentGene', bugScratchDoubles = (replaceInList scratchDoubles doubleIndex (getDist ( scratchPosns !! posnIndex)  (0, 0))) } )
+
+replaceInList :: [a] -> Int -> a -> [a]
+replaceInList [] _ _ = []
+replaceInList (_ : rest) 0 r = r : rest
+replaceInList (x : rest) n r = x : (replaceInList rest (n - 1) r)
 
 bugBounce :: Bool -> Pos -> Bug -> Writer [LogEntry] Bug
 bugBounce bounced newPos bug@(Bug {bugPosn = p, bugEnergy = e, bugCurrentGene = currentGene}) = do
@@ -36,7 +56,7 @@ randBug :: [Int] -> Int -> Int -> (Bug, [Int])
 randBug (randX : randY : rest ) cols rows = do
     let randX' = mod (abs randX) cols
         randY' = mod (abs randY) rows
-    (Bug { bugPosn = (randX', randY'), bugEnergy = 15, bugGenes = [Up, Down, Bug.Left, Bug.Right], bugCurrentGene = 0}, rest)
+    (Bug { bugPosn = (randX', randY'), bugEnergy = 15, bugGenes = [Up, Down, Bug.Left, Bug.Right, GetNearestSpider 0, GetMag 0 0 ], bugScratchPosns = [(0, 0)], bugCurrentGene = 0, bugScratchDoubles = [0.0]}, rest)
 
 randBugs :: [Int] -> Int -> Int -> Int -> ([Bug], [Int])
 randBugs rest _ _ 0 = ([], rest)
