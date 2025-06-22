@@ -21,5 +21,5 @@ log2str (BugBounced pos) = "Bug bounced at: " ++ (pos2string pos) ++ "."
 drawLogs :: [LogEntry] -> Int -> Int -> [Command]
 drawLogs logLs cols rows = do
     let col = getCol cols
-        coords = zip (repeat col) [1..]
+        coords = zip (repeat col) [0..]
     map (\(l, (x, y)) -> drawLog l x y cols rows) (zip logLs coords)
