@@ -1,4 +1,4 @@
-module Pos(Pos(..), adjustPos, getDist) where
+module Pos(Pos(..), adjustPos, getDist, pos2string) where
 
 type Pos = (Int, Int)
 
@@ -25,3 +25,5 @@ adjustPos (x, y) cols rows = do
     else
         (False, (x, y))
 
+pos2string :: Pos -> String
+pos2string (x, y) = "(" ++ (show x) ++ ", " ++ (show y) ++ ")"

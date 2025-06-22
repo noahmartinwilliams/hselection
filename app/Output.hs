@@ -22,3 +22,8 @@ obey w (DrawSpider (col, row) : rest) c r = do
     move row col
     wAddStr w "s"
     obey w rest c r
+
+obey w (DrawStr str (col, row) : rest) c r = do
+    move row col
+    wAddStr w str
+    obey w rest c r

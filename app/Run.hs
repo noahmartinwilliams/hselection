@@ -18,12 +18,17 @@ runSpider (tx, ty) cols rows maxSpeed spiderInput= do
         newX = (fromIntegral (tx - cx) :: Double) * maxSpeed / dist
         newY = (fromIntegral (ty - cy) :: Double) * maxSpeed / dist
         (bounced, newPos) = adjustPos (round newX :: Int, round newY :: Int) cols rows
-    if bounced
+    if energy == 0 
     then do
-        tell [SpiderBounced newPos]
-        return spider 
+        tell [SpiderStarved pos]
+        return spider
     else
-        return (Spider newPos energy)
+        if bounced
+        then do
+            tell [SpiderBounced newPos]
+            return spider 
+        else
+            return (Spider newPos (energy - 1))
 
 runSpiders :: [Int] -> Int -> Int -> Double -> RunnerM World [LogEntry] [Command]
 runSpiders rands cols rows maxSpeed = do
@@ -46,5 +51,6 @@ run randInts randDoubles cols rows maxSpeed = do
     let numSpiders = length spiders
         randInts' = drop (2 * numSpiders) randInts
         randDoubles' = drop (2 * numSpiders) randDoubles
+        logCommands = drawLogs logs cols rows
     rest <- run randInts' randDoubles' cols rows maxSpeed
-    return (spiders ++ [RefreshScr, Wait 1000000, ClrScr] ++ rest)
+    return (spiders ++ logCommands ++ [RefreshScr, Wait 1000000, ClrScr] ++ rest)
