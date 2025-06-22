@@ -8,6 +8,7 @@ import Control.Monad.Writer
 import Control.Monad.State
 import Control.Monad.Trans.Identity
 import Log
+import Plants
 
 type RunnerM s w a = StateT s (Writer w) a
 
@@ -32,7 +33,7 @@ runSpider (tx, ty) cols rows maxSpeed spiderInput= do
 
 runSpiders :: [Int] -> Int -> Int -> Double -> RunnerM World [LogEntry] [Command]
 runSpiders rands cols rows maxSpeed = do
-    world@(World spiders log) <- get
+    world@(World spiders plants log) <- get
     let numSpiders = length spiders
         randsX = take numSpiders rands
         randsY = take numSpiders (drop numSpiders rands)
@@ -41,16 +42,22 @@ runSpiders rands cols rows maxSpeed = do
         spiders' = mapM (\(coord, spider) -> runSpider coord cols rows maxSpeed spider ) coordSpiders
         (spiders'', log') = runWriter spiders' 
         spiderCommands = map (\(Spider pos _) -> DrawSpider pos) spiders''
-    put (World spiders'' log')
+    put (World spiders'' plants log')
     return spiderCommands
+
+runPlants :: [Int] -> RunnerM World [LogEntry] [Command]
+runPlants _ = do
+    (World _ plantLs _) <- get
+    return (foldr (++) [] (map drawPlant plantLs))
 
 run :: [Int] -> [Double] -> Int -> Int -> Double -> RunnerM World [LogEntry] [Command]
 run randInts randDoubles cols rows maxSpeed = do
-    (World _ logs) <- get
+    (World _ _ logs) <- get
     spiders <- runSpiders randInts cols rows maxSpeed
+    plants <- runPlants randInts
     let numSpiders = length spiders
         randInts' = drop (2 * numSpiders) randInts
         randDoubles' = drop (2 * numSpiders) randDoubles
         logCommands = drawLogs logs cols rows
     rest <- run randInts' randDoubles' cols rows maxSpeed
-    return (spiders ++ logCommands ++ [RefreshScr, Wait 1000000, ClrScr] ++ rest)
+    return (spiders ++ plants ++ logCommands ++ [RefreshScr, Wait 1000000, ClrScr] ++ rest)
