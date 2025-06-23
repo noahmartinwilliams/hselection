@@ -1,4 +1,4 @@
-module Run where
+module Run(run) where
 
 import Spider
 import World
@@ -76,12 +76,30 @@ runPlants _ = do
     (World _ plantLs _ _) <- get
     return (foldr (++) [] (map drawPlant plantLs))
 
+runBug :: Int -> Int -> Bug -> RunnerM World [LogEntry] Bug
+runBug cols rows bug = do
+    (World spiders plants bugs logs) <- get
+    let (bug', logs') = runWriter (obeyGenes cols rows spiders bug ) 
+    let dists = map (\x -> getDist (getPlantPos x) (bugPosn bug)) plants
+        zipped = zip dists plants
+        sorted = sort zipped
+        bugE = bugEnergy bug
+    lift (tell logs')
+    if ((length sorted) /= 0) && ((fst (sorted !! 0)) <= 1.5)
+    then do
+        lift (tell [BugAte (getPlantPos (snd (sorted !! 0))) (getPlantEnergy (snd (sorted !! 0)))])
+        return (bug' { bugEnergy = bugE + (getPlantEnergy (snd (sorted !! 0))) })
+    else
+        return bug'
+
 runBugs :: [Int] -> Int -> Int -> RunnerM World [LogEntry] [Command]
 runBugs _ cols rows = do
-    (World spiders plants bugs logs) <- get
-    let (bugs', logs') = runWriter (mapM (obeyGenes cols rows spiders) bugs)
+    world@(World spiders plants bugs logs) <- get
+    let buggedWorld = mapM (runBug cols rows) bugs
+    let (_, logs') = runWriter (runStateT buggedWorld world)
+    bugs' <- buggedWorld 
     let commands = map (\x -> DrawBug (bugPosn x) ) bugs'
-    tell logs'
+    lift (tell logs')
     put (World spiders plants bugs' (logs ++ logs'))
     return commands
 
