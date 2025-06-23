@@ -35,7 +35,7 @@ runSpider (tx, ty) bugLs cols rows maxSpeed spiderInput | (spiderIsAttacking spi
         newY = (fromIntegral (ty - cy) :: Double) * maxSpeed / dist
         newPos = (round newX :: Int, round newY :: Int)
     newPos' <- adjustPosLog newPos cols rows (SpiderBounced newPos)
-    spider' <- decSpiderEnergy spider (SpiderStarved newPos')
+    spider' <- decSpiderEnergy (Spider newPos' (getSpiderEnergy spider)) (SpiderStarved newPos')
     spider'' <- spiderDecideAttack bugLs spider'
     return spider''
 
@@ -59,9 +59,10 @@ runSpiders rands bugLs cols rows maxSpeed = do
         coordSpiders = zip coords spiders 
         spiders' = mapM (\(coord, spider) -> runSpider coord bugLs cols rows maxSpeed spider ) coordSpiders
         (spiders'', log') = runWriter spiders' 
-        spiderCommands = map (\spider -> DrawSpider (getSpiderPos spider)) spiders''
+        spiders3 = filter (\s -> (getSpiderEnergy s) > 0) spiders''
+        spiderCommands = map (\spider -> DrawSpider (getSpiderPos spider)) spiders3
     tell log'
-    put (World spiders'' plants bugs (log ++ log'))
+    put (World spiders3 plants bugs (log ++ log'))
     return spiderCommands
 
 runPlants :: [Int] -> RunnerM World [LogEntry] [Command]
@@ -73,10 +74,10 @@ runBugs :: [Int] -> Int -> Int -> RunnerM World [LogEntry] [Command]
 runBugs _ cols rows = do
     (World spiders plants bugs logs) <- get
     let (bugs', logs') = runWriter (mapM (obeyGenes cols rows spiders) bugs)
-    let (commands, logs'') = runWriter (mapM (drawBug cols rows) bugs)
-    tell logs''
-    put (World spiders plants bugs' (logs ++ logs' ++ logs''))
-    return (foldr (++) [] commands)
+    let commands = map (\x -> DrawBug (bugPosn x) ) bugs'
+    tell logs'
+    put (World spiders plants bugs' (logs ++ logs'))
+    return commands
 
 run :: [Int] -> [Double] -> Int -> Int -> Double -> RunnerM World [LogEntry] [Command]
 run randInts randDoubles cols rows maxSpeed = do
