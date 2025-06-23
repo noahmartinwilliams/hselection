@@ -4,7 +4,7 @@ import Pos
 import Commands
 import Control.Parallel.Strategies
 
-data LogEntry = SpiderAttacking Pos | SpiderBounced Pos | BugBounced Pos | SpiderStarved Pos deriving(Show, Eq)
+data LogEntry = SpiderAteBug Pos | SpiderAttacking Pos | SpiderBounced Pos | BugBounced Pos | SpiderStarved Pos deriving(Show, Eq)
 
 getCol :: Int -> Int
 getCol x = div (2 * x ) 3
@@ -15,6 +15,7 @@ drawLog logEntry col row cols rows = do
     DrawStr (log2str logEntry) newCoord
 
 log2str :: LogEntry -> String
+log2str (SpiderAteBug pos) = "Spider at bug at: " ++ (pos2string pos) ++ "."
 log2str (SpiderBounced pos) = "Spider bounced at: " ++ (pos2string pos) ++ "."
 log2str (SpiderStarved pos) = "Spider starved at: " ++ (pos2string pos) ++ "."
 log2str (SpiderAttacking pos) = "Spider attacking: " ++ (pos2string pos) ++ "."

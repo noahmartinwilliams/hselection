@@ -14,39 +14,45 @@ import Data.List
 
 type RunnerM s w a = StateT s (Writer w) a
 
-spiderDecideAttack :: [Bug] -> Spider -> Writer [LogEntry] Spider
-spiderDecideAttack bugLs spider = do
+spiderDecideAttack ::  Spider -> RunnerM World [LogEntry] Spider
+spiderDecideAttack spider = do
+    (World spiders plants bugLs logs) <- get
     let bugDists = map (\bug -> getDist (bugPosn bug) (getSpiderPos spider)) bugLs
         bugZipped = zip bugDists bugLs
         bugSorted = sort bugZipped
-    if ((length bugSorted) /= 0) && ((fst (bugSorted !! 0)) < 7.0) 
+    if ((length bugSorted) /= 0) && ((fst (bugSorted !! 0)) < 7.0)  && ((fst (bugSorted !! 0)) > 1.5) 
     then do
-        tell [SpiderAttacking (getSpiderPos spider)]
+        lift (tell [SpiderAttacking (getSpiderPos spider)])
         return (SpiderAttack (getSpiderPos spider) (bugPosn (snd (bugSorted !! 0))) (getSpiderEnergy spider))
+    else if ((length bugSorted) /= 0) && ((fst (bugSorted !! 0)) <= 1.5)
+    then do
+        lift (tell [SpiderAteBug (getSpiderPos spider)])
+        put (World spiders plants (drop 1 (map snd bugSorted )) logs)
+        return (Spider (getSpiderPos spider) (getSpiderEnergy spider))
     else
         return (Spider (getSpiderPos spider) (getSpiderEnergy spider))
         
     
-runSpider :: Pos -> [Bug] -> Int -> Int -> Double -> Spider -> Writer [LogEntry] Spider
-runSpider (tx, ty) bugLs cols rows maxSpeed spiderInput | (spiderIsAttacking spiderInput) == False = do
+runSpider :: Pos -> Int -> Int -> Double -> Spider -> RunnerM World [LogEntry] Spider
+runSpider (tx, ty) cols rows maxSpeed spiderInput | (spiderIsAttacking spiderInput) == False = do
     let (spider@(Spider pos@(cx, cy) energy)) = spiderInput
     let dist = getDist (tx, ty) pos
         newX = (fromIntegral (tx - cx) :: Double) * maxSpeed / dist
         newY = (fromIntegral (ty - cy) :: Double) * maxSpeed / dist
         newPos = (round newX :: Int, round newY :: Int)
-    newPos' <- adjustPosLog newPos cols rows (SpiderBounced newPos)
-    spider' <- decSpiderEnergy (Spider newPos' (getSpiderEnergy spider)) (SpiderStarved newPos')
-    spider'' <- spiderDecideAttack bugLs spider'
+    newPos' <- lift (adjustPosLog newPos cols rows (SpiderBounced newPos))
+    spider' <- lift (decSpiderEnergy (Spider newPos' (getSpiderEnergy spider)) (SpiderStarved newPos'))
+    spider'' <- spiderDecideAttack spider'
     return spider''
 
-runSpider _ bugLs cols rows maxSpeed spider@(SpiderAttack cpos@(cx, cy) tpos@(tx, ty) energy) = do
+runSpider _ cols rows maxSpeed spider@(SpiderAttack cpos@(cx, cy) tpos@(tx, ty) energy) = do
     let dist = getDist cpos tpos
         (vx, vy) = (tx - cx, ty - cy)
         (newX, newY) = ((maxSpeed / dist) * (fromIntegral vx :: Double), (maxSpeed/dist) * (fromIntegral vy :: Double))
         newPos = (round newX , round newY)
-    newPos' <- adjustPosLog newPos cols rows (SpiderBounced newPos)
-    spider' <- spiderDecideAttack bugLs (SpiderAttack newPos' tpos energy)
-    spider'' <- decSpiderEnergy spider' (SpiderStarved newPos')
+    newPos' <- lift (adjustPosLog newPos cols rows (SpiderBounced newPos))
+    spider' <- spiderDecideAttack (SpiderAttack newPos' tpos energy)
+    spider'' <- lift (decSpiderEnergy spider' (SpiderStarved newPos'))
     return spider''
 
 runSpiders :: [Int] -> [Bug] -> Int -> Int -> Double -> RunnerM World [LogEntry] [Command]
@@ -57,11 +63,11 @@ runSpiders rands bugLs cols rows maxSpeed = do
         randsY = take numSpiders (drop numSpiders rands)
         coords = zip randsX randsY
         coordSpiders = zip coords spiders 
-        spiders' = mapM (\(coord, spider) -> runSpider coord bugLs cols rows maxSpeed spider ) coordSpiders
-        (spiders'', log') = runWriter spiders' 
-        spiders3 = filter (\s -> (getSpiderEnergy s) > 0) spiders''
+        spiders' = mapM (\(coord, spider) -> runSpider coord cols rows maxSpeed spider ) coordSpiders
+    spiders'' <- spiders'
+    let spiders3 = filter (\s -> (getSpiderEnergy s) > 0) spiders''
         spiderCommands = map (\spider -> DrawSpider (getSpiderPos spider)) spiders3
-    tell log'
+        (_, log') = runWriter (runStateT spiders' world)
     put (World spiders3 plants bugs (log ++ log'))
     return spiderCommands
 
