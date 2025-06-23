@@ -43,6 +43,7 @@ runSpiders rands cols rows maxSpeed = do
         spiders' = mapM (\(coord, spider) -> runSpider coord cols rows maxSpeed spider ) coordSpiders
         (spiders'', log') = runWriter spiders' 
         spiderCommands = map (\(Spider pos _) -> DrawSpider pos) spiders''
+    tell log'
     put (World spiders'' plants bugs (log ++ log'))
     return spiderCommands
 
@@ -56,6 +57,7 @@ runBugs _ cols rows = do
     (World spiders plants bugs logs) <- get
     let (bugs', logs') = runWriter (mapM (obeyGenes cols rows spiders) bugs)
     let (commands, logs'') = runWriter (mapM (drawBug cols rows) bugs)
+    tell logs''
     put (World spiders plants bugs' (logs ++ logs' ++ logs''))
     return (foldr (++) [] commands)
 
