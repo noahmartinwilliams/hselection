@@ -1,4 +1,6 @@
-module Pos(Pos(..), adjustPos, getDist, pos2string) where
+module Pos(Pos(..), adjustPos, adjustPosLog, getDist, pos2string) where
+
+import Control.Monad.Writer
 
 type Pos = (Int, Int)
 
@@ -16,6 +18,16 @@ cutOff :: Int -> Int -> Int
 cutOff i m | i > m = m
 cutOff i _ | i < 0 = 0
 cutOff i _ = i
+
+adjustPosLog :: (Int, Int) -> Int -> Int -> a -> Writer [a] Pos
+adjustPosLog (x, y) cols rows err = do
+    let (b, npos) = adjustPos (x, y) cols rows
+    if b
+    then do
+        tell [err]
+        return npos
+    else
+        return npos 
 
 adjustPos :: (Int, Int) -> Int -> Int -> (Bool, Pos)
 adjustPos (x, y) cols rows = do

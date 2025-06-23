@@ -13,8 +13,8 @@ main :: IO ()
 main = do
     start
     (rows, cols) <- scrSize
-    let gi = mkStdGen 100
-        gd = mkStdGen 100
+    gi <- getStdGen
+    let gd = mkStdGen 100
         randInts = randoms gi :: [Int]
         randDoubles = randoms gd :: [Double]
         dworld = defaultWorld randInts randDoubles ( 2 * (div cols 3)) rows

@@ -10,39 +10,56 @@ import Control.Monad.Trans.Identity
 import Log
 import Plant
 import Bug
+import Data.List
 
 type RunnerM s w a = StateT s (Writer w) a
 
-runSpider :: Pos -> Int -> Int -> Double -> Writer [LogEntry] Spider -> Writer [LogEntry] Spider
-runSpider (tx, ty) cols rows maxSpeed spiderInput= do
-    let (spider@(Spider pos@(cx, cy) energy), _) = runWriter spiderInput
+spiderDecideAttack :: [Bug] -> Spider -> Writer [LogEntry] Spider
+spiderDecideAttack bugLs spider = do
+    let bugDists = map (\bug -> getDist (bugPosn bug) (getSpiderPos spider)) bugLs
+        bugZipped = zip bugDists bugLs
+        bugSorted = sort bugZipped
+    if ((length bugSorted) /= 0) && ((fst (bugSorted !! 0)) < 7.0) 
+    then do
+        tell [SpiderAttacking (getSpiderPos spider)]
+        return (SpiderAttack (getSpiderPos spider) (bugPosn (snd (bugSorted !! 0))) (getSpiderEnergy spider))
+    else
+        return (Spider (getSpiderPos spider) (getSpiderEnergy spider))
+        
+    
+runSpider :: Pos -> [Bug] -> Int -> Int -> Double -> Spider -> Writer [LogEntry] Spider
+runSpider (tx, ty) bugLs cols rows maxSpeed spiderInput | (spiderIsAttacking spiderInput) == False = do
+    let (spider@(Spider pos@(cx, cy) energy)) = spiderInput
     let dist = getDist (tx, ty) pos
         newX = (fromIntegral (tx - cx) :: Double) * maxSpeed / dist
         newY = (fromIntegral (ty - cy) :: Double) * maxSpeed / dist
-        (bounced, newPos) = adjustPos (round newX :: Int, round newY :: Int) cols rows
-    if energy == 0 
-    then do
-        tell [SpiderStarved pos]
-        return spider
-    else
-        if bounced
-        then do
-            tell [SpiderBounced newPos]
-            return spider 
-        else
-            return (Spider newPos (energy - 1))
+        newPos = (round newX :: Int, round newY :: Int)
+    newPos' <- adjustPosLog newPos cols rows (SpiderBounced newPos)
+    spider' <- decSpiderEnergy spider (SpiderStarved newPos')
+    spider'' <- spiderDecideAttack bugLs spider'
+    return spider''
 
-runSpiders :: [Int] -> Int -> Int -> Double -> RunnerM World [LogEntry] [Command]
-runSpiders rands cols rows maxSpeed = do
+runSpider _ bugLs cols rows maxSpeed spider@(SpiderAttack cpos@(cx, cy) tpos@(tx, ty) energy) = do
+    let dist = getDist cpos tpos
+        (vx, vy) = (tx - cx, ty - cy)
+        (newX, newY) = ((maxSpeed / dist) * (fromIntegral vx :: Double), (maxSpeed/dist) * (fromIntegral vy :: Double))
+        newPos = (round newX , round newY)
+    newPos' <- adjustPosLog newPos cols rows (SpiderBounced newPos)
+    spider' <- spiderDecideAttack bugLs (SpiderAttack newPos' tpos energy)
+    spider'' <- decSpiderEnergy spider' (SpiderStarved newPos')
+    return spider''
+
+runSpiders :: [Int] -> [Bug] -> Int -> Int -> Double -> RunnerM World [LogEntry] [Command]
+runSpiders rands bugLs cols rows maxSpeed = do
     world@(World spiders plants bugs log) <- get
     let numSpiders = length spiders
         randsX = take numSpiders rands
         randsY = take numSpiders (drop numSpiders rands)
         coords = zip randsX randsY
-        coordSpiders = zip coords (map (\x -> writer (x, [])) spiders)
-        spiders' = mapM (\(coord, spider) -> runSpider coord cols rows maxSpeed spider ) coordSpiders
+        coordSpiders = zip coords spiders 
+        spiders' = mapM (\(coord, spider) -> runSpider coord bugLs cols rows maxSpeed spider ) coordSpiders
         (spiders'', log') = runWriter spiders' 
-        spiderCommands = map (\(Spider pos _) -> DrawSpider pos) spiders''
+        spiderCommands = map (\spider -> DrawSpider (getSpiderPos spider)) spiders''
     tell log'
     put (World spiders'' plants bugs (log ++ log'))
     return spiderCommands
@@ -64,7 +81,7 @@ runBugs _ cols rows = do
 run :: [Int] -> [Double] -> Int -> Int -> Double -> RunnerM World [LogEntry] [Command]
 run randInts randDoubles cols rows maxSpeed = do
     (World spiders plants bugs logs) <- get
-    spidersCommands <- runSpiders randInts cols rows maxSpeed
+    spidersCommands <- runSpiders randInts bugs cols rows maxSpeed
     plantsCommands <- runPlants randInts
     bugsCommands <- runBugs randInts cols rows
     let numSpiders = length spiders
