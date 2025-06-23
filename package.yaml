@@ -47,6 +47,7 @@ executables:
     - split
     - hscurses
     - transformers
+    - parallel
 
 tests:
   hselection-test:
