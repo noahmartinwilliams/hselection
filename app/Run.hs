@@ -79,7 +79,7 @@ runPlants _ = do
 runBug :: Int -> Int -> Bug -> RunnerM World [LogEntry] Bug
 runBug cols rows bug = do
     (World spiders plants bugs logs) <- get
-    let (bug', logs') = runWriter (obeyGenes cols rows spiders bug ) 
+    let (bug', logs') = runWriter (obeyGenes cols rows spiders plants bug ) 
     let dists = map (\x -> getDist (getPlantPos x) (bugPosn bug)) plants
         zipped = zip dists plants
         sorted = sort zipped
