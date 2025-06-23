@@ -9,7 +9,7 @@ import Data.List
 
 data Bug = Bug { bugPosn :: Pos, bugEnergy :: Int, bugGenes :: [Gene], bugCurrentGene :: Int, bugScratchPosns :: [Pos], bugScratchDoubles :: [Double] } deriving(Show, Eq, Ord)
 
-data Gene = Up | Down | Left | Right | GetNearestSpider Int | GetMag Int Int | IfLt Int Int | EndIf deriving(Show, Eq, Ord)
+data Gene = Up | Down | Left | Right | GetNearestSpider Int | GetMag Int Int | IfLt Int Int | EndIf | IfGt Int Int | GetX Int Int | GetY Int Int deriving(Show, Eq, Ord)
 
 obeyGenes :: Int -> Int -> [Spider] -> Bug -> Writer [LogEntry] Bug
 obeyGenes cols rows spiders bug@(Bug { bugCurrentGene = x, bugGenes = y}) | (x == ((length y) - 1)) = obeyGenes cols rows spiders (bug {bugCurrentGene = 0}) 
@@ -49,6 +49,16 @@ obeyGenes cols rows spiderLs bug@(Bug { bugCurrentGene = i, bugEnergy = e, bugGe
             else
                 return (bug { bugCurrentGene = (i + (skipToEndIf (drop (i + 1) g)))})
 
+        IfGt doubleIndx1 doubleIndx2 ->
+            if (scratchDoubles !! doubleIndx1) > (scratchDoubles !! doubleIndx2) 
+            then
+                return (bug { bugCurrentGene = currentGene'})
+            else
+                return (bug { bugCurrentGene = (i + (skipToEndIf (drop (i + 1) g)))})
+
+        GetX vectIndx doubleIndx ->
+            let (x, _) = (scratchPosns !! vectIndx) in return (bug { bugCurrentGene = currentGene', bugScratchDoubles = (replaceInList scratchDoubles doubleIndx (fromIntegral x :: Double))})
+
 skipToEndIf :: [Gene] -> Int 
 skipToEndIf [] = 0
 skipToEndIf (EndIf : _) = 1
@@ -63,7 +73,7 @@ randBug :: [Int] -> Int -> Int -> (Bug, [Int])
 randBug (randX : randY : rest ) cols rows = do
     let randX' = mod (abs randX) cols
         randY' = mod (abs randY) rows
-    (Bug { bugPosn = (randX', randY'), bugEnergy = 15, bugGenes = [Up, Up, Bug.Left, Bug.Right], bugScratchPosns = [(0, 0)], bugCurrentGene = 0, bugScratchDoubles = [0.0, 1.0]}, rest)
+    (Bug { bugPosn = (randX', randY'), bugEnergy = 15, bugGenes = [Up, Up, Bug.Left, Bug.Right, GetNearestSpider 0, GetX 0 0 ], bugScratchPosns = [(0, 0)], bugCurrentGene = 0, bugScratchDoubles = [0.0, 1.0]}, rest)
 
 randBugs :: [Int] -> Int -> Int -> Int -> ([Bug], [Int])
 randBugs rest _ _ 0 = ([], rest)
