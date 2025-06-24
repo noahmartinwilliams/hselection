@@ -11,4 +11,5 @@ defaultWorld :: [Int] -> [Double] -> Int -> Int -> World
 defaultWorld  randInts _ cols rows = do
     let (bugs, randInts') = randBugs randInts cols rows 10
         (spiders, randInts'') = randSpiders randInts' cols rows 4
-    World [Spider (10, 10) 15, Spider (25, 23) 15] [Plant (15, 15) 5, Plant (16, 17) 10] bugs  []
+        plants = randPlants randInts'' cols rows 20
+    World spiders plants bugs  []

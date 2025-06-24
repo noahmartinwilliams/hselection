@@ -78,7 +78,7 @@ runPlants _ = do
 
 runBug :: Int -> Int -> Bug -> RunnerM World [LogEntry] Bug
 runBug cols rows bug = do
-    (World spiders plants bugs logs) <- get
+    (World spiders plants bugs _) <- get
     let (bug', logs') = runWriter (obeyGenes cols rows spiders plants bug ) 
     let dists = map (\x -> getDist (getPlantPos x) (bugPosn bug)) plants
         zipped = zip dists plants
@@ -88,24 +88,26 @@ runBug cols rows bug = do
     if ((length sorted) /= 0) && ((fst (sorted !! 0)) <= 1.5)
     then do
         lift (tell [BugAte (getPlantPos (snd (sorted !! 0))) (getPlantEnergy (snd (sorted !! 0)))])
+        put (World spiders (drop 1 (map snd sorted)) bugs logs')
         return (bug' { bugEnergy = bugE + (getPlantEnergy (snd (sorted !! 0))) })
     else
         return bug'
 
 runBugs :: [Int] -> Int -> Int -> RunnerM World [LogEntry] [Command]
 runBugs _ cols rows = do
-    world@(World spiders plants bugs logs) <- get
+    world@(World _ _ bugs logs) <- get
     let buggedWorld = mapM (runBug cols rows) bugs
     let (_, logs') = runWriter (runStateT buggedWorld world)
     bugs' <- buggedWorld 
     let commands = map (\x -> DrawBug (bugPosn x) ) bugs'
     lift (tell logs')
-    put (World spiders plants bugs' (logs ++ logs'))
+    (World spiders' plants' _ _) <- get
+    put (World spiders' plants' bugs' (logs ++ logs')) 
     return commands
 
 run :: [Int] -> [Double] -> Int -> Int -> Double -> RunnerM World [LogEntry] [Command]
 run randInts randDoubles cols rows maxSpeed = do
-    (World spiders plants bugs logs) <- get
+    (World spiders _ bugs logs) <- get
     spidersCommands <- runSpiders randInts bugs cols rows maxSpeed
     plantsCommands <- runPlants randInts
     bugsCommands <- runBugs randInts cols rows
