@@ -1,3 +1,4 @@
 # hselection
 This program demonstrates some of how to use Haskell's monad transformers.
-The program isn't complete yet as the bugs can't evolve at the moment, but it does show moving bugs and spiders. Enjoy.
+It shows bugs that mutate over time, plants that the bugs eat, spiders that attack the bugs, and a log of events that appears on the right.
+This demonstrates the kind of complexity that monad transformers can help deal with.
