@@ -28,7 +28,7 @@ spiderDecideAttack spider = do
     then do
         lift (tell [SpiderAteBug (getSpiderPos spider)])
         put (World cols rows randLs spiders plants (drop 1 (map snd bugSorted )) logs)
-        return (Spider (getSpiderPos spider) (getSpiderEnergy spider))
+        return (Spider (getSpiderPos spider) ((getSpiderEnergy spider) + (bugEnergy (snd (bugSorted !! 0)))))
     else
         return (Spider (getSpiderPos spider) (getSpiderEnergy spider))
         
@@ -81,10 +81,18 @@ runPlants = do
     (World _ _ _ _ plantLs _ _) <- get
     return (foldr (++) [] (map drawPlant plantLs))
 
+reproduceBug :: (Bool, Bug) -> Int -> Int -> RunnerM World [LogEntry] Bug
+reproduceBug (True, b) cols rows = do
+    (World cols rows rands spiders plants bugs logs) <- get
+    put (World cols rows rands spiders plants ((bugAdjustPosn b cols rows) : bugs) logs)
+    return b
+reproduceBug (False, b) _ _ = return b
+
 runBug :: Bug -> RunnerM World [LogEntry] Bug
 runBug bug = do
     world@(World cols rows rands spiders plants bugs _) <- get
     let ((bug', _), logs') = runWriter (runStateT (obeyGenes bug ) world)
+    bug'' <- reproduceBug bug' cols rows
     let dists = map (\x -> getDist (getPlantPos x) (bugPosn bug)) plants
         zipped = zip dists plants
         sorted = sort zipped
@@ -94,9 +102,9 @@ runBug bug = do
     then do
         lift (tell [BugAte (getPlantPos (snd (sorted !! 0))) (getPlantEnergy (snd (sorted !! 0)))])
         put (World cols rows rands spiders (drop 1 (map snd sorted)) bugs logs')
-        return (bug' { bugEnergy = bugE + (getPlantEnergy (snd (sorted !! 0))) })
+        return (bug'' { bugEnergy = bugE + (getPlantEnergy (snd (sorted !! 0))) })
     else
-        return bug'
+        return bug''
 
 runBugs :: RunnerM World [LogEntry] [Command]
 runBugs = do
