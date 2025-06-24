@@ -1,8 +1,9 @@
 module Pos(Pos(..), adjustPos, adjustPosLog, getDist, pos2string) where
 
 import Control.Monad.Writer
-
-type Pos = (Int, Int)
+import Control.Monad.State
+import Control.Monad.Trans.Identity
+import Types
 
 getDist :: Pos -> Pos -> Double
 getDist (x1, y1) (x2, y2) = do
@@ -19,7 +20,7 @@ cutOff i m | i > m = m
 cutOff i _ | i < 0 = 0
 cutOff i _ = i
 
-adjustPosLog :: (Int, Int) -> Int -> Int -> a -> Writer [a] Pos
+adjustPosLog :: (Int, Int) -> Int -> Int -> LogEntry -> RunnerM World [LogEntry] Pos
 adjustPosLog (x, y) cols rows err = do
     let (b, npos) = adjustPos (x, y) cols rows
     if b

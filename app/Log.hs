@@ -1,10 +1,10 @@
-module Log(LogEntry(..), drawLogs) where
+module Log(drawLogs) where
 
 import Pos
 import Commands
 import Control.Parallel.Strategies
+import Types
 
-data LogEntry = BugAte Pos Int | SpiderAteBug Pos | SpiderAttacking Pos | SpiderBounced Pos | BugBounced Pos | SpiderStarved Pos deriving(Show, Eq)
 
 getCol :: Int -> Int
 getCol x = div (2 * x ) 3

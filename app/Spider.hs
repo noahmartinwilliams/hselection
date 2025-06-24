@@ -1,9 +1,8 @@
-module Spider(Spider(..), randSpiders, getSpiderPos, getSpiderEnergy, spiderIsAttacking, decSpiderEnergy) where
+module Spider(randSpiders, getSpiderPos, getSpiderEnergy, spiderIsAttacking, decSpiderEnergy) where
 
 import Pos 
 import Control.Monad.Writer
-
-data Spider = Spider Pos Int | SpiderAttack Pos Pos Int deriving(Show, Eq, Ord)
+import Types
 
 getSpiderEnergy :: Spider -> Int
 getSpiderEnergy (Spider _ e) = e

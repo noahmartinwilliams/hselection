@@ -1,0 +1,21 @@
+module Types where
+
+import Control.Monad.Writer
+import Control.Monad.State
+import Control.Monad.Trans.Identity
+
+type Pos = (Int, Int)
+
+data Bug = Bug { bugPosn :: Pos, bugEnergy :: Int, bugGenes :: [Gene], bugCurrentGene :: Int, bugScratchPosns :: [Pos], bugScratchDoubles :: [Double] } deriving(Show, Eq, Ord)
+
+data Gene = Up Int | Down Int | Left Int | Right Int | Neg Int | GetNearestSpider Int | GetNearestPlant Int | GetMag Int Int | IfLt Int Int | EndIf | IfGt Int Int | GetX Int Int | GetY Int Int deriving(Show, Eq, Ord)
+
+data World = World Int Int [Int] [Spider] [Plant] [Bug] [LogEntry] deriving(Show, Eq)
+
+data Spider = Spider Pos Int | SpiderAttack Pos Pos Int deriving(Show, Eq, Ord)
+
+type RunnerM s w a = StateT s (Writer w) a
+
+data LogEntry = BugAte Pos Int | SpiderAteBug Pos | SpiderAttacking Pos | SpiderBounced Pos | BugBounced Pos | SpiderStarved Pos deriving(Show, Eq)
+
+data Plant = Plant Pos Int deriving(Show, Eq, Ord)

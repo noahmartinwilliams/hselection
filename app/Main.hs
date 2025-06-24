@@ -19,7 +19,7 @@ main = do
         randInts = randoms gi :: [Int]
         randDoubles = randoms gd :: [Double]
         dworld = defaultWorld randInts randDoubles ( 2 * (div cols 3)) rows
-        runner = run randInts randDoubles cols (rows - 2) 3.0
+        runner = run randDoubles 3.0
         written = runStateT runner dworld
         ((commands, _), _) = runWriter written
     obey stdScr commands cols rows 

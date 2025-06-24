@@ -12,12 +12,11 @@ import Plant
 import Bug
 import Data.List
 import Control.Parallel
-
-type RunnerM s w a = StateT s (Writer w) a
+import Types
 
 spiderDecideAttack ::  Spider -> RunnerM World [LogEntry] Spider
 spiderDecideAttack spider = do
-    (World spiders plants bugLs logs) <- get
+    (World cols rows randLs spiders plants bugLs logs) <- get
     let bugDists = map (\bug -> getDist (bugPosn bug) (getSpiderPos spider)) bugLs
         bugZipped = zip bugDists bugLs
         bugSorted = sort bugZipped
@@ -28,7 +27,7 @@ spiderDecideAttack spider = do
     else if ((length bugSorted) /= 0) && ((fst (bugSorted !! 0)) <= 1.5)
     then do
         lift (tell [SpiderAteBug (getSpiderPos spider)])
-        put (World spiders plants (drop 1 (map snd bugSorted )) logs)
+        put (World cols rows randLs spiders plants (drop 1 (map snd bugSorted )) logs)
         return (Spider (getSpiderPos spider) (getSpiderEnergy spider))
     else
         return (Spider (getSpiderPos spider) (getSpiderEnergy spider))
@@ -41,7 +40,7 @@ runSpider (tx, ty) cols rows maxSpeed spiderInput | (spiderIsAttacking spiderInp
         newX = (fromIntegral (tx - cx) :: Double) * maxSpeed / dist
         newY = (fromIntegral (ty - cy) :: Double) * maxSpeed / dist
         newPos = (cx + (round newX :: Int), cy + (round newY :: Int))
-    newPos' <- lift (adjustPosLog newPos cols rows (SpiderBounced newPos))
+    newPos' <- (adjustPosLog newPos cols rows (SpiderBounced newPos))
     spider' <- lift (decSpiderEnergy (Spider newPos' (getSpiderEnergy spider)) (SpiderStarved newPos'))
     spider'' <- spiderDecideAttack spider'
     return spider''
@@ -51,7 +50,7 @@ runSpider _ cols rows maxSpeed spider@(SpiderAttack cpos@(cx, cy) tpos@(tx, ty) 
         (vx, vy) = (tx - cx, ty - cy)
         (newX, newY) = ((maxSpeed / dist) * (fromIntegral vx :: Double), (maxSpeed/dist) * (fromIntegral vy :: Double))
         newPos = (round newX , round newY)
-    newPos' <- lift (adjustPosLog newPos cols rows (SpiderBounced newPos))
+    newPos' <- (adjustPosLog newPos cols rows (SpiderBounced newPos))
     spider' <- spiderDecideAttack (SpiderAttack newPos' tpos energy)
     spider'' <- lift (decSpiderEnergy spider' (SpiderStarved newPos'))
     return spider''
@@ -60,9 +59,9 @@ drawSpider :: Spider -> Command
 drawSpider (Spider p _) = DrawSpider p
 drawSpider (SpiderAttack p _ _ ) = DrawSpiderAttacking p
 
-runSpiders :: [Int] -> [Bug] -> Int -> Int -> Double -> RunnerM World [LogEntry] [Command]
-runSpiders rands bugLs cols rows maxSpeed = do
-    world@(World spiders plants bugs log) <- get
+runSpiders :: Double -> RunnerM World [LogEntry] [Command]
+runSpiders maxSpeed = do
+    world@(World cols rows rands spiders plants bugLs log) <- get
     let numSpiders = length spiders
         randsX = take numSpiders rands
         randsY = take numSpiders (drop numSpiders rands)
@@ -73,19 +72,19 @@ runSpiders rands bugLs cols rows maxSpeed = do
     let spiders3 = filter (\s -> (getSpiderEnergy s) > 0) spiders''
         spiderCommands = map (\spider -> drawSpider spider) spiders3
         (_, log') = runWriter (runStateT spiders' world)
-    (World _ _ bugs' _) <- get
-    put (World spiders3 plants bugs' (log ++ log'))
+    (World _ _ _ _ _ bugs' _) <- get
+    put (World cols rows rands spiders3 plants bugs' (log ++ log'))
     return spiderCommands
 
-runPlants :: [Int] -> RunnerM World [LogEntry] [Command]
-runPlants _ = do
-    (World _ plantLs _ _) <- get
+runPlants :: RunnerM World [LogEntry] [Command]
+runPlants = do
+    (World _ _ _ _ plantLs _ _) <- get
     return (foldr (++) [] (map drawPlant plantLs))
 
-runBug :: Int -> Int -> Bug -> RunnerM World [LogEntry] Bug
-runBug cols rows bug = do
-    (World spiders plants bugs _) <- get
-    let (bug', logs') = runWriter (obeyGenes cols rows spiders plants bug ) 
+runBug :: Bug -> RunnerM World [LogEntry] Bug
+runBug bug = do
+    world@(World cols rows rands spiders plants bugs _) <- get
+    let ((bug', _), logs') = runWriter (runStateT (obeyGenes bug ) world)
     let dists = map (\x -> getDist (getPlantPos x) (bugPosn bug)) plants
         zipped = zip dists plants
         sorted = sort zipped
@@ -94,41 +93,41 @@ runBug cols rows bug = do
     if ((length sorted) /= 0) && ((fst (sorted !! 0)) <= 1.5)
     then do
         lift (tell [BugAte (getPlantPos (snd (sorted !! 0))) (getPlantEnergy (snd (sorted !! 0)))])
-        put (World spiders (drop 1 (map snd sorted)) bugs logs')
+        put (World cols rows rands spiders (drop 1 (map snd sorted)) bugs logs')
         return (bug' { bugEnergy = bugE + (getPlantEnergy (snd (sorted !! 0))) })
     else
         return bug'
 
-runBugs :: [Int] -> Int -> Int -> RunnerM World [LogEntry] [Command]
-runBugs _ cols rows = do
-    world@(World _ _ bugs logs) <- get
-    let buggedWorld = mapM (runBug cols rows) bugs
+runBugs :: RunnerM World [LogEntry] [Command]
+runBugs = do
+    world@(World cols rows _ _ _ bugs logs) <- get
+    let buggedWorld = mapM runBug bugs
     let (_, logs') = runWriter (runStateT buggedWorld world)
     bugs' <- buggedWorld 
     let commands = map (\x -> DrawBug (bugPosn x) ) bugs'
     lift (tell logs')
-    (World spiders' plants' _ _) <- get
-    put (World spiders' plants' bugs' (logs ++ logs')) 
+    (World _ _ rands spiders' plants' _ _) <- get
+    put (World cols rows rands spiders' plants' bugs' (logs ++ logs')) 
     return commands
 
-run :: [Int] -> [Double] -> Int -> Int -> Double -> RunnerM World [LogEntry] [Command]
-run randInts randDoubles cols rows maxSpeed = do
-    (World spiders _ bugs logs) <- get
-    spidersCommands <- runSpiders randInts bugs cols rows maxSpeed
-    plantsCommands <- runPlants randInts
-    bugsCommands <- runBugs randInts cols rows
+run :: [Double] -> Double -> RunnerM World [LogEntry] [Command]
+run randDoubles maxSpeed = do
+    (World cols rows randInts spiders _ bugs logs) <- get
+    spidersCommands <- runSpiders maxSpeed
+    bugsCommands <- runBugs 
+    plantsCommands <- runPlants 
     let numSpiders = length spiders
         randInts' = drop (2 * numSpiders) randInts
         randDoubles' = drop (2 * numSpiders) randDoubles
         logCommands = drawLogs logs cols rows
-    (World spiders' plants' bugs' logs') <- get
+    (World _ _ _ spiders' plants' bugs' logs') <- get
     let logLengthDiff = abs ((length logs') - (length logs))
         commands = (spidersCommands ++ plantsCommands ++ bugsCommands ++ logCommands ++ [RefreshScr, Wait 1000000, ClrScr])
     if (length logs) >= rows
     then do
-        bugs' `par` (put (World spiders' plants' bugs' (drop logLengthDiff logs')))
-        rest <- run randInts' randDoubles' cols rows maxSpeed
+        bugs' `par` (put (World cols rows randInts' spiders' plants' bugs' (drop logLengthDiff logs')))
+        rest <- run randDoubles' maxSpeed
         return (commands ++ rest)
     else do
-        rest <- run randInts' randDoubles' cols rows maxSpeed
+        rest <- run randDoubles' maxSpeed
         return (commands ++ rest)
