@@ -116,7 +116,7 @@ randBug (randX : randY : rest ) cols rows energy = do
         randY' = mod (abs randY) rows
         genes = mkRandGenes rest 100 100 100
         posns = take 100 (repeat (0, 0))
-        scratch = take 100 (repeat 0.0)
+        scratch = take 100 (repeat 1.0)
         rest' = drop 100 rest
     (Bug { bugPosn = (randX', randY'), bugEnergy = energy, bugGenes = genes, bugScratchPosns = posns, bugCurrentGene = 0, bugScratchDoubles = scratch}, rest')
 

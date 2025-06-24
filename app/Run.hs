@@ -39,7 +39,7 @@ runSpider (tx, ty) cols rows maxSpeed spiderInput | (spiderIsAttacking spiderInp
     let dist = getDist (tx, ty) pos
         newX = (fromIntegral (tx - cx) :: Double) * maxSpeed / dist
         newY = (fromIntegral (ty - cy) :: Double) * maxSpeed / dist
-        newPos = (round newX :: Int, round newY :: Int)
+        newPos = (cx + (round newX :: Int), cy + (round newY :: Int))
     newPos' <- lift (adjustPosLog newPos cols rows (SpiderBounced newPos))
     spider' <- lift (decSpiderEnergy (Spider newPos' (getSpiderEnergy spider)) (SpiderStarved newPos'))
     spider'' <- spiderDecideAttack spider'
