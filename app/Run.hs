@@ -11,6 +11,7 @@ import Log
 import Plant
 import Bug
 import Data.List
+import Control.Parallel
 
 type RunnerM s w a = StateT s (Writer w) a
 
@@ -125,7 +126,7 @@ run randInts randDoubles cols rows maxSpeed = do
         commands = (spidersCommands ++ plantsCommands ++ bugsCommands ++ logCommands ++ [RefreshScr, Wait 1000000, ClrScr])
     if (length logs) >= rows
     then do
-        put (World spiders' plants' bugs' (drop logLengthDiff logs'))
+        bugs' `par` (put (World spiders' plants' bugs' (drop logLengthDiff logs')))
         rest <- run randInts' randDoubles' cols rows maxSpeed
         return (commands ++ rest)
     else do
