@@ -12,7 +12,7 @@ import Plant
 import Types
 
 numGeneCons :: Int
-numGeneCons = 14
+numGeneCons = 16
 
 num2gene :: Int -> Int -> Int -> Gene
 num2gene 0 i _ = Up i
@@ -28,8 +28,9 @@ num2gene 9 _ _ = EndIf
 num2gene 10 i j = IfGt i j
 num2gene 11 i j = GetX i j
 num2gene 12 i j = GetY i j
-num2gene 13 i _ = Reproduce (mod i 2)
-num2gene 14 i _ = Reproduce (mod i 2)
+num2gene 13 _ _ = NOP
+num2gene 14 i _ = Reproduce ((mod i 3) + 1)
+num2gene 15 i _ = Reproduce ((mod i 3) + 1)
 
 obeyGenes :: Bug -> RunnerM World [LogEntry] (Bool, Bug)
 obeyGenes bug@(Bug { bugCurrentGene = x, bugGenes = y}) | (x == ((length y) - 1)) = obeyGenes (bug {bugCurrentGene = 0}) 
@@ -111,6 +112,8 @@ obeyGenes bug@(Bug { bugCurrentGene = i, bugEnergy = e, bugGenes = g, bugPosn = 
                 return (True, ret)
             else
                 obeyGenes (bug { bugCurrentGene = currentGene' })
+        NOP ->
+            obeyGenes (bug { bugCurrentGene = currentGene' })
 
 mutate :: Bug -> RunnerM World [LogEntry] Bug
 mutate bug@(Bug { bugGenes = genes, bugPosn = posn, bugScratchPosns = posns, bugScratchDoubles = scratchDoubles }) = do
