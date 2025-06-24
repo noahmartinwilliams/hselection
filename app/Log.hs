@@ -15,7 +15,7 @@ drawLog logEntry col row cols rows = do
     DrawStr (log2str logEntry) newCoord
 
 log2str :: LogEntry -> String
-log2str (SpiderAteBug pos) = "Spider at bug at: " ++ (pos2string pos) ++ "."
+log2str (SpiderAteBug pos) = "Spider ate bug at: " ++ (pos2string pos) ++ "."
 log2str (SpiderBounced pos) = "Spider bounced at: " ++ (pos2string pos) ++ "."
 log2str (SpiderStarved pos) = "Spider starved at: " ++ (pos2string pos) ++ "."
 log2str (SpiderAttacking pos) = "Spider attacking: " ++ (pos2string pos) ++ "."
