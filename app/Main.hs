@@ -13,7 +13,7 @@ main :: IO ()
 main = do
     start
     (rows, cols) <- scrSize
-    let gi = mkStdGen 100
+    gi <- getStdGen
     let gd = mkStdGen 100
         randInts = randoms gi :: [Int]
         randDoubles = randoms gd :: [Double]

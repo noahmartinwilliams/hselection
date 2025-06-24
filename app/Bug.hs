@@ -12,6 +12,24 @@ data Bug = Bug { bugPosn :: Pos, bugEnergy :: Int, bugGenes :: [Gene], bugCurren
 
 data Gene = Up Int | Down Int | Left Int | Right Int | Neg Int | GetNearestSpider Int | GetNearestPlant Int | GetMag Int Int | IfLt Int Int | EndIf | IfGt Int Int | GetX Int Int | GetY Int Int deriving(Show, Eq, Ord)
 
+numGeneCons :: Int
+numGeneCons = 12
+
+num2gene :: Int -> Int -> Int -> Gene
+num2gene 0 i _ = Up i
+num2gene 1 i _ = Down i
+num2gene 2 i _ = Bug.Left i
+num2gene 3 i _ = Bug.Right i
+num2gene 4 i _ = Neg i
+num2gene 5 i _ = GetNearestSpider i
+num2gene 6 i _ = GetNearestPlant i
+num2gene 7 i j = GetMag i j
+num2gene 8 i j = IfLt i j
+num2gene 9 _ _ = EndIf
+num2gene 10 i j = IfGt i j
+num2gene 11 i j = GetX i j
+num2gene 12 i j = GetY i j
+
 obeyGenes :: Int -> Int -> [Spider] -> [Plant] -> Bug -> Writer [LogEntry] Bug
 obeyGenes cols rows spiders plants bug@(Bug { bugCurrentGene = x, bugGenes = y}) | (x == ((length y) - 1)) = obeyGenes cols rows spiders plants (bug {bugCurrentGene = 0}) 
 obeyGenes cols rows spiderLs plantLs bug@(Bug { bugCurrentGene = i, bugEnergy = e, bugGenes = g, bugPosn = p@(x, y), bugScratchPosns = scratchPosns, bugScratchDoubles = scratchDoubles }) = do
@@ -92,15 +110,23 @@ replaceInList [] _ _ = []
 replaceInList (_ : rest) 0 r = r : rest
 replaceInList (x : rest) n r = x : (replaceInList rest (n - 1) r)
 
-randBug :: [Int] -> Int -> Int -> (Bug, [Int])
-randBug (randX : randY : rest ) cols rows = do
+randBug :: [Int] -> Int -> Int -> Int -> (Bug, [Int])
+randBug (randX : randY : rest ) cols rows energy = do
     let randX' = mod (abs randX) cols
         randY' = mod (abs randY) rows
-    (Bug { bugPosn = (randX', randY'), bugEnergy = 15, bugGenes = [GetNearestPlant 0, GetX 0 0, Neg 0, GetY 0 1, IfGt 0 1, Bug.Left 0, Down 0, EndIf, IfLt 0 1, Down 0, EndIf ], bugScratchPosns = [(0, 0)], bugCurrentGene = 0, bugScratchDoubles = [0.0, 0.0]}, rest)
+        genes = mkRandGenes rest 100 100 100
+        posns = take 100 (repeat (0, 0))
+        scratch = take 100 (repeat 0.0)
+        rest' = drop 100 rest
+    (Bug { bugPosn = (randX', randY'), bugEnergy = energy, bugGenes = genes, bugScratchPosns = posns, bugCurrentGene = 0, bugScratchDoubles = scratch}, rest')
+
+mkRandGenes :: [Int] -> Int -> Int -> Int -> [Gene]
+mkRandGenes _ 0 _ _ = []
+mkRandGenes ( i : j : k : rest ) n nDoubles nVects = (num2gene (mod (abs i) numGeneCons) (mod (abs i) nDoubles) (mod (abs k) nVects) ) : (mkRandGenes rest (n - 1) nDoubles nVects)
 
 randBugs :: [Int] -> Int -> Int -> Int -> ([Bug], [Int])
 randBugs rest _ _ 0 = ([], rest)
 randBugs randLs cols rows numBugs = do
-    let (bug, randLs') = randBug randLs cols rows
+    let (bug, randLs') = randBug randLs cols rows 100
         (bugs, randLs'') = randBugs randLs' cols rows (numBugs - 1)
     (bug : bugs, randLs'')
