@@ -1,6 +1,7 @@
 module Output where
 
 import UI.HSCurses.Curses
+import UI.HSCurses.CursesHelper
 import Commands
 import Control.Concurrent
 
@@ -21,6 +22,13 @@ obey w (Wait i : rest) c r = do
 obey w (DrawSpider (col, row) : rest) c r = do
     move row col
     wAddStr w "s"
+    obey w rest c r
+
+obey w (DrawSpiderAttacking (col, row) : rest) c r = do
+    move row col
+    wSetStyle w (mkCursesStyle [Bold])
+    wAddStr w "s"
+    resetStyle
     obey w rest c r
 
 obey w (DrawPlant (col, row) : rest) c r = do

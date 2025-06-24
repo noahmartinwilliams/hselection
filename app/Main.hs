@@ -12,6 +12,7 @@ import World
 main :: IO ()
 main = do
     start
+    startColor
     (rows, cols) <- scrSize
     gi <- getStdGen
     let gd = mkStdGen 100
