@@ -1,4 +1,4 @@
-module Spider(Spider(..), getSpiderPos, getSpiderEnergy, spiderIsAttacking, decSpiderEnergy) where
+module Spider(Spider(..), randSpiders, getSpiderPos, getSpiderEnergy, spiderIsAttacking, decSpiderEnergy) where
 
 import Pos 
 import Control.Monad.Writer
@@ -26,3 +26,10 @@ decSpiderEnergy (SpiderAttack p1 p2 e) a | e == 1= do
     tell [a]
     return (SpiderAttack p1 p2 0)
 decSpiderEnergy (SpiderAttack p1 p2 energy) _ = return (SpiderAttack p1 p2 (energy - 1))
+
+randSpiders :: [Int] -> Int -> Int -> Int -> ([Spider], [Int])
+randSpiders randLs cols rows n = do
+    let xs = take n randLs
+        ys = take n (drop n randLs)
+        xy = zip xs ys
+    (map (\(x, y) -> Spider ((mod (abs x) cols), (mod (abs y) rows)) 15) xy, (drop (2 * n) randLs))
