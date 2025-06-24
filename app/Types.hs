@@ -16,6 +16,6 @@ data Spider = Spider Pos Int | SpiderAttack Pos Pos Int deriving(Show, Eq, Ord)
 
 type RunnerM s w a = StateT s (Writer w) a
 
-data LogEntry = BugMutated Pos | BugAte Pos Int | SpiderAteBug Pos | SpiderAttacking Pos | SpiderBounced Pos | BugBounced Pos | SpiderStarved Pos deriving(Show, Eq)
+data LogEntry = PlantsAdded | BugMutated Pos | BugAte Pos Int | SpiderAteBug Pos | SpiderAttacking Pos | SpiderBounced Pos | BugBounced Pos | SpiderStarved Pos deriving(Show, Eq)
 
 data Plant = Plant Pos Int deriving(Show, Eq, Ord)

@@ -78,8 +78,17 @@ runSpiders maxSpeed = do
 
 runPlants :: RunnerM World [LogEntry] [Command]
 runPlants = do
-    (World _ _ _ _ plantLs _ _) <- get
-    return (foldr (++) [] (map drawPlant plantLs))
+    (World cols rows rands spiders plantLs bugs logs) <- get
+    let [randNum] = take 1 rands
+    if (mod (abs randNum) 5) == 0
+    then do
+        let (newPlants, rands') = randPlants rands cols rows 3
+        put (World cols rows rands' spiders (plantLs ++ newPlants) bugs logs)
+        lift (tell [PlantsAdded ])
+        (World _ _ _ _ plantLs' _ _) <- get
+        return (foldr (++) [] (map drawPlant plantLs'))
+    else
+        return (foldr (++) [] (map drawPlant plantLs))
 
 reproduceBug :: (Bool, Bug) -> Int -> Int -> RunnerM World [LogEntry] Bug
 reproduceBug (True, b) cols rows = do
