@@ -10,6 +10,7 @@ import Spider
 import Data.List
 import Plant
 import Types
+import Control.Parallel.Strategies
 
 numGeneCons :: Int
 numGeneCons = 16
@@ -56,7 +57,7 @@ obeyGenes bug@(Bug { bugCurrentGene = i, bugEnergy = e, bugGenes = g, bugPosn = 
             return (False, (bug{bugEnergy = (e - 1), bugPosn = newPos, bugCurrentGene = currentGene'}))
 
         GetNearestSpider scratchIndex -> do
-            let spiderDists = map (\spider -> getDist (getSpiderPos spider) p) spiderLs
+            let spiderDists = parMap rdeepseq (\spider -> getDist (getSpiderPos spider) p) spiderLs
                 spiderZipped = zip spiderDists spiderLs
                 sorted = sort spiderZipped
             if (length sorted) == 0
@@ -66,7 +67,7 @@ obeyGenes bug@(Bug { bugCurrentGene = i, bugEnergy = e, bugGenes = g, bugPosn = 
                 obeyGenes (bug { bugCurrentGene = currentGene', bugScratchPosns = (replaceInList scratchPosns scratchIndex (getSpiderPos (snd (sorted !! 0)))) })
 
         GetNearestPlant scratchIndex -> do
-            let plantDists = map (\plant -> getDist (getPlantPos plant) p) plantLs
+            let plantDists = parMap rdeepseq (\plant -> getDist (getPlantPos plant) p) plantLs
                 plantZipped = zip plantDists plantLs
                 sorted = sort plantZipped
             if (length sorted) == 0

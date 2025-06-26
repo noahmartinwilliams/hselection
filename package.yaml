@@ -48,6 +48,7 @@ executables:
     - hscurses
     - transformers
     - parallel
+    - deepseq
 
 tests:
   hselection-test:
