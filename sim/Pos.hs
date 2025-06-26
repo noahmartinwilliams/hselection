@@ -3,7 +3,7 @@ module Pos(Pos(..), adjustPos, adjustPosLog, getDist, pos2string) where
 import Control.Monad.Writer
 import Control.Monad.State
 import Control.Monad.Trans.Identity
-import Types
+import HSelect.Types
 
 getDist :: Pos -> Pos -> Double
 getDist (x1, y1) (x2, y2) = do

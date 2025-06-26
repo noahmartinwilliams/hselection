@@ -3,7 +3,7 @@ module Log(drawLogs) where
 import Pos
 import Commands
 import Control.Parallel.Strategies
-import Types
+import HSelect.Types
 
 
 getCol :: Int -> Int

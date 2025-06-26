@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
-module Types where
+module HSelect.Types where
 
 import Control.Monad.Writer
 import Control.Monad.State

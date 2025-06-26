@@ -3,7 +3,6 @@ module Run(run) where
 import Spider
 import World
 import Commands
-import Pos
 import Control.Monad.Writer
 import Control.Monad.State
 import Control.Monad.Trans.Identity
@@ -14,7 +13,9 @@ import Data.List
 import Control.Parallel
 import Control.Parallel.Strategies
 import Par
-import Types
+import HSelect.Types
+import HSelect.Plant
+import Pos
 
 spiderDecideAttack ::  Spider -> RunnerM World [LogEntry] Spider
 spiderDecideAttack spider = do
