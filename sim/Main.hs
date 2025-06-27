@@ -10,19 +10,34 @@ import Control.Monad.Writer
 import Control.Parallel.Strategies
 import GHC.Conc
 import World
+import HSelect.Types
+
+go :: Double -> [Int] -> Int -> Int -> World -> IO ()
+go maxSpeed randInts cols rows world = do
+    inp <- getch
+    let key = decodeKey inp
+    if inp == -1 
+    then do
+        let runner = run maxSpeed
+            written = runStateT runner world
+            ((commands, world'), _) = runWriter written
+            commands' = commands `using` (parBuffer numCapabilities rdeepseq)
+        obey stdScr commands' cols rows 
+        go maxSpeed randInts cols rows world'
+    else do
+        end
+        return ()
+        
+
 
 main :: IO ()
 main = do
     start
     (rows, cols) <- scrSize
+    timeout 1
     --let (rows, cols) = (25, 128)
     gi <- getStdGen
     let randInts = randoms gi :: [Int]
-        dworld = defaultWorld randInts ( 2 * (div cols 3)) rows -- use 2/3 to keep the creatures from crawling over the log on the right of the screen.
-        runner = run 3.0
-        written = runStateT runner dworld
-        ((commands, _), _) = runWriter written
-        commands' = (take (16*1024) commands) `using` (parBuffer numCapabilities rdeepseq)
+    let dworld = defaultWorld randInts ( 2 * (div cols 3)) rows -- use 2/3 to keep the creatures from crawling over the log on the right of the screen.
+    go 3.0 randInts (2 * (div cols 3)) rows dworld
     --putStrLn (foldr (++) "" (map (\x -> (show x ) ++ "\n")  commands'))
-    obey stdScr commands' cols rows  -- Take so that the program can eventually stop and we can use threadscope to figure out if it used enough cores.
-    end

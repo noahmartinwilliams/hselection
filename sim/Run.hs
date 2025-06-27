@@ -141,12 +141,10 @@ run maxSpeed = do
         logCommands = drawLogs logs cols rows
     (World _ _ _ spiders' plants' bugs' logs') <- get
     let logLengthDiff = abs ((length logs') - (length logs))
-        commands = (spidersCommands ++ plantsCommands ++ bugsCommands ++ logCommands ++ [RefreshScr, Wait 10000, ClrScr])
+        commands = (spidersCommands ++ plantsCommands ++ bugsCommands ++ logCommands ++ [RefreshScr, Wait 100000, ClrScr])
     if (length logs) >= rows
     then do
         (put (World cols rows randInts' spiders' plants' bugs' (drop logLengthDiff logs')))
-        rest <- run maxSpeed
-        return (commands ++ rest)
+        return commands
     else do
-        rest <- run maxSpeed
-        return (commands ++ rest)
+        return commands
