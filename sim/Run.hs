@@ -103,7 +103,7 @@ reproduceBug (False, b) _ _ = return b
 runBug :: Bug -> RunnerM World [LogEntry] Bug
 runBug bug = do
     world@(World cols rows rands spiders plants bugs _) <- get
-    let ((bug', _), logs') = runWriter (runStateT (obeyGenes bug ) world)
+    let ((bug', _), logs') = runWriter (runStateT (obeyGenes bug 200 ) world)
     bug'' <- reproduceBug bug' cols rows
     let dists = parMap rdeepseq (\x -> getDist (getPlantPos x) (bugPosn bug)) plants
         zipped = zip dists plants

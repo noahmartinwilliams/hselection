@@ -14,9 +14,10 @@ import HSelect.Types as Types
 import Control.Parallel.Strategies
 
 
-obeyGenes :: Bug -> RunnerM World [LogEntry] (Bool, Bug)
-obeyGenes bug@(Bug { bugCurrentGene = x, bugGenes = y}) | (x == ((length y) - 1)) = obeyGenes (bug {bugCurrentGene = 0}) 
-obeyGenes bug@(Bug { bugCurrentGene = i, bugEnergy = e, bugGenes = g, bugPosn = p@(x, y), bugScratchPosns = scratchPosns, bugScratchDoubles = scratchDoubles }) = do
+obeyGenes :: Bug -> Int -> RunnerM World [LogEntry] (Bool, Bug)
+obeyGenes b 0 = return (False, b)
+obeyGenes bug@(Bug { bugCurrentGene = x, bugGenes = y}) d | (x == ((length y) - 1)) = obeyGenes (bug {bugCurrentGene = 0}) ( d - 1 )
+obeyGenes bug@(Bug { bugCurrentGene = i, bugEnergy = e, bugGenes = g, bugPosn = p@(x, y), bugScratchPosns = scratchPosns, bugScratchDoubles = scratchDoubles }) d = do
     (World cols rows randLs spiderLs plantLs _ _) <- get
     let currentGene' = i+1
         (randInt : _) = take 1 randLs
@@ -43,9 +44,9 @@ obeyGenes bug@(Bug { bugCurrentGene = i, bugEnergy = e, bugGenes = g, bugPosn = 
                 sorted = sort spiderZipped
             if (length sorted) == 0
             then
-                (obeyGenes (bug { bugCurrentGene = currentGene'}))
+                (obeyGenes (bug { bugCurrentGene = currentGene'}) (d - 1))
             else
-                obeyGenes (bug { bugCurrentGene = currentGene', bugScratchPosns = (replaceInList scratchPosns scratchIndex (getSpiderPos (snd (sorted !! 0)))) })
+                obeyGenes (bug { bugCurrentGene = currentGene', bugScratchPosns = (replaceInList scratchPosns scratchIndex (getSpiderPos (snd (sorted !! 0)))) }) (d - 1)
 
         GetNearestPlant scratchIndex -> do
             let plantDists = parMap rdeepseq (\plant -> getDist (getPlantPos plant) p) plantLs
@@ -53,49 +54,49 @@ obeyGenes bug@(Bug { bugCurrentGene = i, bugEnergy = e, bugGenes = g, bugPosn = 
                 sorted = sort plantZipped
             if (length sorted) == 0
             then
-                obeyGenes (bug { bugCurrentGene = currentGene'})
+                obeyGenes (bug { bugCurrentGene = currentGene'}) (d - 1)
             else
-                obeyGenes (bug { bugCurrentGene = currentGene', bugScratchPosns = (replaceInList scratchPosns scratchIndex (getPlantPos (snd (sorted !! 0)))) })
+                obeyGenes (bug { bugCurrentGene = currentGene', bugScratchPosns = (replaceInList scratchPosns scratchIndex (getPlantPos (snd (sorted !! 0)))) }) (d - 1)
 
         GetMag posnIndex doubleIndex -> 
-            obeyGenes (bug {bugCurrentGene = currentGene', bugScratchDoubles = (replaceInList scratchDoubles doubleIndex (getDist ( scratchPosns !! posnIndex)  (0, 0))) } )
+            obeyGenes (bug {bugCurrentGene = currentGene', bugScratchDoubles = (replaceInList scratchDoubles doubleIndex (getDist ( scratchPosns !! posnIndex)  (0, 0))) } ) (d - 1)
 
         IfLt doubleIndx1 doubleIndx2 ->
             if (scratchDoubles !! doubleIndx1) < (scratchDoubles !! doubleIndx2) 
             then
-                obeyGenes (bug { bugCurrentGene = currentGene'})
+                obeyGenes (bug { bugCurrentGene = currentGene'}) (d - 1)
             else
-                obeyGenes (bug { bugCurrentGene = (i + (skipToEndIf (drop (i + 1) g)))})
+                obeyGenes (bug { bugCurrentGene = (i + (skipToEndIf (drop (i + 1) g)))}) (d - 1)
 
         IfGt doubleIndx1 doubleIndx2 ->
             if (scratchDoubles !! doubleIndx1) > (scratchDoubles !! doubleIndx2) 
             then
-                obeyGenes (bug { bugCurrentGene = currentGene'})
+                obeyGenes (bug { bugCurrentGene = currentGene'}) (d - 1)
             else
-                obeyGenes (bug { bugCurrentGene = (i + (skipToEndIf (drop (i + 1) g)))})
+                obeyGenes (bug { bugCurrentGene = (i + (skipToEndIf (drop (i + 1) g)))}) (d - 1)
 
         GetX vectIndx doubleIndx ->
-            let (x, _) = (scratchPosns !! vectIndx) in obeyGenes (bug { bugCurrentGene = currentGene', bugScratchDoubles = (replaceInList scratchDoubles doubleIndx (fromIntegral x :: Double))})
+            let (x, _) = (scratchPosns !! vectIndx) in obeyGenes (bug { bugCurrentGene = currentGene', bugScratchDoubles = (replaceInList scratchDoubles doubleIndx (fromIntegral x :: Double))}) (d - 1)
 
         GetY vectIndx doubleIndx ->
-            let (_, y) = (scratchPosns !! vectIndx) in obeyGenes (bug { bugCurrentGene = currentGene', bugScratchDoubles = (replaceInList scratchDoubles doubleIndx (fromIntegral y :: Double))})
+            let (_, y) = (scratchPosns !! vectIndx) in obeyGenes (bug { bugCurrentGene = currentGene', bugScratchDoubles = (replaceInList scratchDoubles doubleIndx (fromIntegral y :: Double))}) (d - 1)
 
         EndIf ->
-            obeyGenes (bug { bugCurrentGene = currentGene' } )
+            obeyGenes (bug { bugCurrentGene = currentGene' } ) (d - 1)
 
         Neg indx ->
-            obeyGenes (bug { bugCurrentGene = currentGene', bugScratchDoubles = (replaceInList scratchDoubles indx (- (scratchDoubles !! indx)) ) } )
+            obeyGenes (bug { bugCurrentGene = currentGene', bugScratchDoubles = (replaceInList scratchDoubles indx (- (scratchDoubles !! indx)) ) } ) (d - 1)
 
         Reproduce prob ->
             if (mod (abs randInt) prob) == 0
             then do
                 mutatedBug <- (mutate (bug { bugCurrentGene = currentGene'}))
-                (_, ret) <- obeyGenes mutatedBug
+                (_, ret) <- obeyGenes mutatedBug (d - 1)
                 return (True, ret)
             else
-                obeyGenes (bug { bugCurrentGene = currentGene' })
+                obeyGenes (bug { bugCurrentGene = currentGene' }) (d - 1)
         NOP ->
-            obeyGenes (bug { bugCurrentGene = currentGene' })
+            obeyGenes (bug { bugCurrentGene = currentGene' }) (d - 1)
 
 mutate :: Bug -> RunnerM World [LogEntry] Bug
 mutate bug@(Bug { bugGenes = genes, bugPosn = posn, bugScratchPosns = posns, bugScratchDoubles = scratchDoubles }) = do
