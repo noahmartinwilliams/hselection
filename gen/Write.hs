@@ -27,7 +27,7 @@ gene2str (Reproduce i) = "reproduce(" ++ (show i) ++ ")"
 genes2str :: [Gene] -> String
 genes2str geneLs = do
     let strs = parMap rdeepseq (\x -> ", " ++ (gene2str x) ) geneLs
-    foldr (++) "" (drop 1 strs)
+    drop 2 (foldr (++) "" strs )
 
 scratchPosns2str :: [Pos] -> String
 scratchPosns2str ls = let strs = parMap rdeepseq (\x -> ", " ++ (pos2str x)) ls in foldr (++) "" (drop 1 strs)
@@ -37,7 +37,7 @@ scratchDoubles2str ls = let strs = map (\x -> ", " ++ (show x)) ls in foldr (++)
 
 bug2str :: Bug -> String
 bug2str (Bug { bugPosn = posn, bugEnergy = energy, bugGenes = genes, bugCurrentGene = currentGene, bugScratchPosns = scratchPosns, bugScratchDoubles = scratchDoubles}) = do
-    "bug(" ++ (pos2str posn) ++ ", " ++ (show energy) ++ ", " ++ (genes2str genes) ++ ", [" ++ (scratchPosns2str scratchPosns) ++ "], [" ++ (scratchDoubles2str scratchDoubles) ++ "])."
+    "bug(" ++ (pos2str posn) ++ ", " ++ (show energy) ++ ", [" ++ (genes2str genes) ++ "], [" ++ (scratchPosns2str scratchPosns) ++ "], [" ++ (scratchDoubles2str scratchDoubles) ++ "])."
 
 spider2str :: Spider -> String
 spider2str (Spider pos energy) = "spider(" ++ (pos2str pos) ++ ", " ++ (show energy) ++ ")."
