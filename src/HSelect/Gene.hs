@@ -22,7 +22,7 @@ num2gene 11 i j = GetX i j
 num2gene 12 i j = GetY i j
 num2gene 13 _ _ = NOP
 num2gene 14 i _ = Reproduce ((mod i 3) + 1)
-num2gene 15 i _ = Reproduce ((mod i 3) + 1)
+num2gene 15 i j = Place i j
 
 randBug :: [Int] -> Int -> Int -> Int -> (Bug, [Int])
 randBug (randX : randY : rest ) cols rows energy = do

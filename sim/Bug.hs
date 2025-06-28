@@ -98,6 +98,9 @@ obeyGenes bug@(Bug { bugCurrentGene = i, bugEnergy = e, bugGenes = g, bugPosn = 
         NOP ->
             obeyGenes (bug { bugCurrentGene = currentGene' }) (d - 1)
 
+        Place pos value ->
+            obeyGenes (bug { bugCurrentGene = currentGene', bugScratchDoubles = (replaceInList scratchDoubles pos (fromIntegral value :: Double))}) (d - 1)
+
 mutate :: Bug -> RunnerM World [LogEntry] Bug
 mutate bug@(Bug { bugGenes = genes, bugPosn = posn, bugScratchPosns = posns, bugScratchDoubles = scratchDoubles }) = do
     (World _ _ rands _ _ _ _ ) <- get
