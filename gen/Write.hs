@@ -30,10 +30,10 @@ genes2str geneLs = do
     drop 2 (foldr (++) "" strs )
 
 scratchPosns2str :: [Pos] -> String
-scratchPosns2str ls = let strs = parMap rdeepseq (\x -> ", " ++ (pos2str x)) ls in foldr (++) "" (drop 1 strs)
+scratchPosns2str ls = let strs = parMap rdeepseq (\x -> ", " ++ (pos2str x)) ls in drop 2 (foldr (++) "" strs)
 
 scratchDoubles2str :: [Double] -> String
-scratchDoubles2str ls = let strs = map (\x -> ", " ++ (show x)) ls in foldr (++) "" (drop 1 strs)
+scratchDoubles2str ls = let strs = map (\x -> ", " ++ (show x)) ls in drop 2 (foldr (++) "" strs)
 
 bug2str :: Bug -> String
 bug2str (Bug { bugPosn = posn, bugEnergy = energy, bugGenes = genes, bugCurrentGene = currentGene, bugScratchPosns = scratchPosns, bugScratchDoubles = scratchDoubles}) = do
