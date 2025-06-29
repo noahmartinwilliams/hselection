@@ -4,7 +4,7 @@ import HSelect.Types as Types
 import Data.List
 
 numGeneCons :: Int
-numGeneCons = 16
+numGeneCons = 18
 
 num2gene :: Int -> Int -> Int -> Gene
 num2gene 0 i _ = Up i
@@ -21,8 +21,10 @@ num2gene 10 i j = IfGt i j
 num2gene 11 i j = GetX i j
 num2gene 12 i j = GetY i j
 num2gene 13 _ _ = NOP
-num2gene 14 i _ = Reproduce ((mod i 3) + 1)
-num2gene 15 i j = Place i j
+num2gene 14 i _ = Reproduce ((mod i 2) + 1)
+num2gene 15 i _ = Reproduce ((mod i 2) + 1)
+num2gene 16 i _ = Reproduce ((mod i 2) + 1)
+num2gene 17 i j = Place i j
 
 randBug :: [Int] -> Int -> Int -> Int -> (Bug, [Int])
 randBug (randX : randY : rest ) cols rows energy = do

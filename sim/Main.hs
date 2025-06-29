@@ -21,9 +21,15 @@ go maxSpeed randInts cols rows world = do
         let runner = run maxSpeed
             written = runStateT runner world
             ((commands, world'), _) = runWriter written
-            commands' = commands `using` (parBuffer numCapabilities rdeepseq)
-        obey stdScr commands' cols rows 
-        go maxSpeed randInts cols rows world'
+            (World _ _ _ _ _ bugLs _) = world'
+        if (length bugLs) == 0
+        then do
+            end
+            return()
+        else do
+            let commands' = commands `using` (parBuffer numCapabilities rdeepseq)
+            obey stdScr commands' cols rows 
+            go maxSpeed randInts cols rows world'
     else do
         end
         return ()
@@ -39,5 +45,5 @@ main = do
     gi <- getStdGen
     let randInts = randoms gi :: [Int]
     let dworld = defaultWorld randInts ( 2 * (div cols 3)) rows -- use 2/3 to keep the creatures from crawling over the log on the right of the screen.
-    go 3.0 randInts (2 * (div cols 3)) rows dworld
+    go 10.0 randInts (2 * (div cols 3)) rows dworld
     --putStrLn (foldr (++) "" (map (\x -> (show x ) ++ "\n")  commands'))

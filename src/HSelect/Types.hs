@@ -20,6 +20,6 @@ data Spider = Spider Pos Int | SpiderAttack Pos Pos Int deriving(Show, Eq, Ord, 
 
 type RunnerM s w a = StateT s (Writer w) a
 
-data LogEntry = PlantsAdded | BugMutated Pos | BugAte Pos Int | SpiderAteBug Pos | SpiderAttacking Pos | SpiderBounced Pos | BugBounced Pos | SpiderStarved Pos deriving(Show, Eq, Generic, NFData)
+data LogEntry = SpiderAdded Pos | PlantsAdded | BugMutated Pos | BugAte Pos Int | SpiderAteBug Pos | SpiderAttacking Pos | SpiderBounced Pos | BugBounced Pos | SpiderStarved Pos deriving(Show, Eq, Generic, NFData)
 
 data Plant = Plant Pos Int deriving(Show, Eq, Ord, Generic, NFData)

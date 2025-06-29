@@ -17,11 +17,11 @@ spiderIsAttacking (SpiderAttack _ _ _ ) = True
 spiderIsAttacking _ = False
 
 decSpiderEnergy :: Spider -> a -> Writer [a] Spider
-decSpiderEnergy (Spider p e) a | e == 11= do
+decSpiderEnergy (Spider p e) a | e == 1 = do
     tell [a]
     return (Spider p 0)
 decSpiderEnergy (Spider p energy) _ = return (Spider p (energy - 1))
-decSpiderEnergy (SpiderAttack p1 p2 e) a | e == 1= do
+decSpiderEnergy (SpiderAttack p1 p2 e) a | e == 1 = do
     tell [a]
     return (SpiderAttack p1 p2 0)
 decSpiderEnergy (SpiderAttack p1 p2 energy) _ = return (SpiderAttack p1 p2 (energy - 1))

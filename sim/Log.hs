@@ -23,6 +23,7 @@ log2str (BugBounced pos) = "Bug bounced at: " ++ (pos2string pos) ++ "."
 log2str (BugAte pos e) = "Bug ate plant at: " ++ (pos2string pos) ++ " for " ++ (show e) ++ " energy."
 log2str (BugMutated pos) = "Bug mutated at: " ++ (pos2string pos) ++ "."
 log2str (PlantsAdded) = "Plants have been added."
+log2str (SpiderAdded p) = "Spider added at: " ++ (pos2string p) ++ "."
 
 drawLogs :: [LogEntry] -> Int -> Int -> [Command]
 drawLogs logLs cols rows = do

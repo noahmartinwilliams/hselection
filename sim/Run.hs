@@ -23,7 +23,7 @@ spiderDecideAttack spider = do
     let bugDists = parMap rdeepseq (\bug -> getDist (bugPosn bug) (getSpiderPos spider)) bugLs
         bugZipped = zip bugDists bugLs
         bugSorted = sort bugZipped
-    if ((length bugSorted) /= 0) && ((fst (bugSorted !! 0)) < 7.0)  && ((fst (bugSorted !! 0)) > 1.5) 
+    if ((length bugSorted) /= 0) && ((fst (bugSorted !! 0)) < 9.0)  && ((fst (bugSorted !! 0)) > 1.5) 
     then do
         lift (tell [SpiderAttacking (getSpiderPos spider)])
         return (SpiderAttack (getSpiderPos spider) (bugPosn (snd (bugSorted !! 0))) (getSpiderEnergy spider))
@@ -69,21 +69,40 @@ runSpiders maxSpeed = do
         randsX = take numSpiders rands
         randsY = take numSpiders (drop numSpiders rands)
         coords = zip randsX randsY
-        coordSpiders = zip coords spiders 
+        coords' = map (\(x, y) -> (abs (x + (div cols 2)), abs (y + (div rows 2)))) coords
+        coordSpiders = zip coords' spiders 
         spiders' = mapM (\(coord, spider) -> runSpider coord cols rows maxSpeed spider ) coordSpiders
     spiders'' <- spiders'
     let spiders3 = filter (\s -> (getSpiderEnergy s) > 0) spiders''
         spiderCommands = map (\spider -> drawSpider spider) spiders3
         (_, log') = runWriter (runStateT spiders' world)
     (World _ _ _ _ _ bugs' _) <- get
-    par3 spiders3 plants bugs' (put (World cols rows rands spiders3 plants bugs' (log ++ log')))
-    return spiderCommands
+    if numSpiders < 15 
+    then do
+        spiders4 <- addSpiders spiders3 cols rows rands (15 - numSpiders) 
+        par3 spiders4 plants bugs' (put (World cols rows rands spiders4 plants bugs' (log ++ log')))
+        return spiderCommands
+    else do
+        par3 spiders3 plants bugs' (put (World cols rows rands spiders3 plants bugs' (log ++ log')))
+        return spiderCommands
+
+addSpiders :: [Spider] -> Int -> Int -> [Int] -> Int -> RunnerM World [LogEntry] [Spider]
+addSpiders spiderLs _ _ _ 0 = return spiderLs
+addSpiders spiderLs cols rows (randx : randy: rest) numToAdd = do
+    let (bool, posn) = adjustPos (mod (abs randx) cols, mod (abs randy) rows) cols rows
+    if bool
+    then
+        (addSpiders spiderLs cols rows rest numToAdd)
+    else do
+        tell [SpiderAdded posn]
+        rest <- (addSpiders spiderLs cols rows rest (numToAdd - 1))
+        return ((Spider posn 10) : rest)
 
 runPlants :: RunnerM World [LogEntry] [Command]
 runPlants = do
     (World cols rows rands spiders plantLs bugs logs) <- get
     let [randNum] = take 1 rands
-    if (mod (abs randNum) 5) == 0
+    if ((mod (abs randNum) 5) == 0) && ((length plantLs) <= 150)
     then do
         let (newPlants, rands') = randPlants rands cols rows 3
         put (World cols rows rands' spiders (plantLs ++ newPlants) bugs logs)
@@ -141,7 +160,7 @@ run maxSpeed = do
         logCommands = drawLogs logs cols rows
     (World _ _ _ spiders' plants' bugs' logs') <- get
     let logLengthDiff = abs ((length logs') - (length logs))
-        commands = (spidersCommands ++ plantsCommands ++ bugsCommands ++ logCommands ++ [RefreshScr, Wait 100000, ClrScr])
+        commands = (spidersCommands ++ plantsCommands ++ bugsCommands ++ logCommands ++ [RefreshScr, Wait 10000, ClrScr])
     if (length logs) >= rows
     then do
         (put (World cols rows randInts' spiders' plants' bugs' (drop logLengthDiff logs')))
