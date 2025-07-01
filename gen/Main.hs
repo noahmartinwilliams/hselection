@@ -16,7 +16,7 @@ main = do
     args <- getArgs
     hSetBuffering stdout (BlockBuffering Nothing)
     let (actions, nonOptions, errors) = getOpt RequireOrder options args
-    opts <- foldl (>>=) (return (Flags { needHelp = False, cols = 211, rows=26, numSpiders = 30, numPlants = 20, numBugs = 100})) actions
+    opts <- foldl (>>=) (return (Flags { needHelp = False, cols = 210, rows=25, numSpiders = 30, numPlants = 20, numBugs = 100})) actions
     if needHelp opts
     then
         putStrLn (usageInfo "gen: " options) 
@@ -40,8 +40,8 @@ genWorld randInts cols rows numSpiders numBugs numPlants = do
 data Flags = Flags { needHelp :: Bool, cols :: Int, rows :: Int, numSpiders :: Int, numBugs :: Int, numPlants :: Int } deriving(Show, Eq)
 
 options :: [OptDescr (Flags -> IO Flags)]
-options = [ Option ['r'] ["rows"] (ReqArg (\i -> \opt -> return opt { rows = (read i :: Int) }) "26") "Number of rows of the terminal.",
-    Option ['c'] ["cols"] (ReqArg (\i -> \opt -> return opt { cols = (read i :: Int)}) "211") "Number of columns of the terminal.",
+options = [ Option ['r'] ["rows"] (ReqArg (\i -> \opt -> return opt { rows = ((read i :: Int)-1) }) "25") "Number of rows of the terminal. Get it via \"stty -a\".",
+    Option ['c'] ["cols"] (ReqArg (\i -> \opt -> return opt { cols = ((read i :: Int) - 1)}) "210") "Number of columns of the terminal. Get it via \"stty -a\".",
     Option ['b'] ["bugs"] (ReqArg (\i -> \opt -> return opt { numBugs = (read i :: Int)}) "100") "Number of bugs to populate world with.",
     Option ['s'] ["spiders"] (ReqArg (\i -> \opt -> return opt { numSpiders = (read i :: Int)}) "20") "Number of spiders.",
     Option ['p'] ["plants"] (ReqArg (\i -> \opt -> return opt { numPlants = (read i :: Int)}) "30") "Number of plants.",
