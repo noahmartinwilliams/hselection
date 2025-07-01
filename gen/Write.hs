@@ -55,4 +55,4 @@ world2str (World cols rows (randInt : _) spiders plants bugs _ ) = do
         spiders'' = foldr (++) "" spiders'
         plants'' = foldr (++) "" plants'
         bugs'' = foldr (++) "" bugs'
-    "world(" ++ (show cols) ++ ", " ++ (show rows) ++ ", " ++ (show randInt) ++ ").\n" ++ spiders'' ++ plants'' ++ bugs''
+    "world(" ++ (show cols) ++ ", " ++ (show rows) ++ ", " ++ (show (abs randInt)) ++ ").\n" ++ spiders'' ++ plants'' ++ bugs''
