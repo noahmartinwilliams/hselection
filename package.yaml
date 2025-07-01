@@ -50,6 +50,7 @@ executables:
     - parallel
     - deepseq
     - hselection
+    - megaparsec
 
   gen:
     main:                Main.hs

@@ -1,5 +1,7 @@
 module Main (main) where
 
+import System.Environment
+import System.IO
 import UI.HSCurses.CursesHelper
 import UI.HSCurses.Curses
 import Output
@@ -11,9 +13,11 @@ import Control.Parallel.Strategies
 import GHC.Conc
 import World
 import HSelect.Types
+import Parse
+import Text.Megaparsec
 
-go :: Double -> [Int] -> Int -> Int -> World -> IO ()
-go maxSpeed randInts cols rows world = do
+go :: Double -> Int -> Int -> World -> IO ()
+go maxSpeed cols rows world = do
     inp <- getch
     let key = decodeKey inp
     if inp == -1 
@@ -29,21 +33,28 @@ go maxSpeed randInts cols rows world = do
         else do
             let commands' = commands `using` (parBuffer numCapabilities rdeepseq)
             obey stdScr commands' cols rows 
-            go maxSpeed randInts cols rows world'
+            go maxSpeed cols rows world'
     else do
         end
         return ()
         
-
-
 main :: IO ()
 main = do
-    start
-    (rows, cols) <- scrSize
-    timeout 1
-    --let (rows, cols) = (25, 128)
-    gi <- getStdGen
-    let randInts = randoms gi :: [Int]
-    let dworld = defaultWorld randInts ( 2 * (div cols 3)) rows -- use 2/3 to keep the creatures from crawling over the log on the right of the screen.
-    go 10.0 randInts (2 * (div cols 3)) rows dworld
-    --putStrLn (foldr (++) "" (map (\x -> (show x ) ++ "\n")  commands'))
+    args <- getArgs
+    if (length args) == 0
+    then do
+        putStrLn ("Usage: sim [world filename]")
+    else do
+        let fname = args !! 0
+        h <- openFile fname ReadMode
+        c <- hGetContents h
+        --let (rows, cols) = (25, 128)
+        let dworld = runParser file "" c
+        case dworld of 
+            (Prelude.Left err) -> putStr (errorBundlePretty err)
+            (Prelude.Right dworld') -> do
+                start
+                (rows, cols) <- scrSize
+                timeout 1
+                go 10.0 (2 * (div cols 3)) rows dworld'
+        --putStrLn (foldr (++) "" (map (\x -> (show x ) ++ "\n")  commands'))

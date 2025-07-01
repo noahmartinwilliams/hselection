@@ -8,6 +8,7 @@ pos2str :: Pos -> String
 pos2str (x, y) = "<" ++ (show x) ++ ", " ++ (show y) ++ ">"
 
 gene2str :: Gene -> String
+gene2str (Place i1 i2) = "place(" ++ (show i1) ++ ", " ++ (show i2) ++ ")"
 gene2str NOP = "nop"
 gene2str (Up i) = "up(" ++ (show i) ++ ")"
 gene2str (Down i) = "down(" ++ (show i) ++ ")"
@@ -36,7 +37,7 @@ scratchDoubles2str :: [Double] -> String
 scratchDoubles2str ls = let strs = map (\x -> ", " ++ (show x)) ls in drop 2 (foldr (++) "" strs)
 
 bug2str :: Bug -> String
-bug2str (Bug { bugPosn = posn, bugEnergy = energy, bugGenes = genes, bugCurrentGene = currentGene, bugScratchPosns = scratchPosns, bugScratchDoubles = scratchDoubles}) = do
+bug2str (Bug { bugPosn = posn, bugEnergy = energy, bugGenes = genes, bugScratchPosns = scratchPosns, bugScratchDoubles = scratchDoubles}) = do
     "bug(" ++ (pos2str posn) ++ ", " ++ (show energy) ++ ", [" ++ (genes2str genes) ++ "], [" ++ (scratchPosns2str scratchPosns) ++ "], [" ++ (scratchDoubles2str scratchDoubles) ++ "])."
 
 spider2str :: Spider -> String
